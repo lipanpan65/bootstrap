@@ -80,7 +80,7 @@ confirm() {
     fi
     echo ""
     echo -e "${YELLOW}按 Enter 继续，Ctrl+C 退出...${NC}"
-    read -r
+    read -r < /dev/tty || true
 }
 
 # ────────────────────────────────────────────────────────────

@@ -290,7 +290,7 @@ import_flannel_images() {
         fi
 
         echo -e "${YELLOW}完成后按 Enter 重试导入，或 Ctrl+C 退出手动处理...${NC}"
-        read -r
+        read -r < /dev/tty || true
 
         if [[ -f "./${flannel_tar}" && -f "./${flannel_cni_tar}" ]]; then
             _do_import
@@ -428,7 +428,7 @@ join_worker() {
     echo -e "${BOLD}请粘贴从 master 节点获取的 join 命令：${NC}"
     echo -e "${CYAN}（格式：kubeadm join <ip>:6443 --token ... --discovery-token-ca-cert-hash sha256:...）${NC}"
     echo ""
-    read -rp "Join 命令: " JOIN_CMD
+    read -rp "Join 命令: " JOIN_CMD < /dev/tty
 
     if [[ -z "$JOIN_CMD" ]]; then error "join 命令不能为空"; fi
 
