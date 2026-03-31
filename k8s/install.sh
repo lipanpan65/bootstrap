@@ -83,7 +83,7 @@ usage() {
     exit 1
 }
 
-[[ $# -eq 0 ]] && usage
+if [[ $# -eq 0 ]]; then usage; fi
 
 for arg in "$@"; do
     case "$arg" in
@@ -94,7 +94,7 @@ for arg in "$@"; do
     esac
 done
 
-[[ -z "$ROLE" ]] && usage
+if [[ -z "$ROLE" ]]; then usage; fi
 
 # ────────────────────────────────────────────────────────────
 # Step 0: 前置准备（所有节点）
@@ -430,7 +430,7 @@ join_worker() {
     echo ""
     read -rp "Join 命令: " JOIN_CMD
 
-    [[ -z "$JOIN_CMD" ]] && error "join 命令不能为空"
+    if [[ -z "$JOIN_CMD" ]]; then error "join 命令不能为空"; fi
 
     # 安全校验：只允许 kubeadm join 命令
     if [[ ! "$JOIN_CMD" =~ ^(sudo[[:space:]]+)?kubeadm[[:space:]]+join[[:space:]] ]]; then
@@ -463,7 +463,7 @@ main() {
     print_banner "K8s 集群安装 — ${ROLE}" "版本: ${K8S_PATCH_VERSION} | 镜像源: 阿里云"
 
     local min_mem=2
-    [[ "$ROLE" == "worker" ]] && min_mem=1
+    if [[ "$ROLE" == "worker" ]]; then min_mem=1; fi
     preflight_base "K8s" "$min_mem"
 
     setup_prerequisites

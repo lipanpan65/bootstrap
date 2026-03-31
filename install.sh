@@ -58,7 +58,7 @@ usage() {
 # ────────────────────────────────────────────────────────────
 # 参数解析
 # ────────────────────────────────────────────────────────────
-[[ $# -eq 0 ]] && usage
+if [[ $# -eq 0 ]]; then usage; fi
 
 SERVICE="$1"
 shift  # 剩余参数传递给子脚本
@@ -66,7 +66,7 @@ shift  # 剩余参数传递给子脚本
 # 验证服务名
 valid=false
 for s in "${SUPPORTED_SERVICES[@]}"; do
-    [[ "$s" == "$SERVICE" ]] && valid=true && break
+    if [[ "$s" == "$SERVICE" ]]; then valid=true; break; fi
 done
 if [[ "$valid" == false ]]; then
     echo -e "${RED}不支持的服务: ${SERVICE}${NC}"

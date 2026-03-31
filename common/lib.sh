@@ -8,7 +8,7 @@
 # ============================================================
 
 # 防止重复 source
-[[ -n "${_LIB_LOADED:-}" ]] && return 0
+if [[ -n "${_LIB_LOADED:-}" ]]; then return 0; fi
 _LIB_LOADED=1
 
 # ────────────────────────────────────────────────────────────
@@ -95,7 +95,9 @@ service_running() { systemctl is-active --quiet "$1" 2>/dev/null; }
 
 # 检查是否 root 权限
 require_root() {
-    [[ $EUID -ne 0 ]] && error "请以 root 或 sudo 执行此脚本"
+    if [[ $EUID -ne 0 ]]; then
+        error "请以 root 或 sudo 执行此脚本"
+    fi
 }
 
 # 获取系统架构（amd64 / arm64）
@@ -191,8 +193,8 @@ print_banner() {
     echo "  ██████╔╝╚██████╔╝╚██████╔╝   ██║   ███████║   ██║   ██║  ██║██║  ██║██║     "
     echo "  ╚═════╝  ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     "
     echo -e "${NC}"
-    [[ -n "$title" ]]    && echo -e "  ${BOLD}▸ ${title}${NC}"
-    [[ -n "$subtitle" ]] && echo -e "  ${CYAN}${subtitle}${NC}"
+    if [[ -n "$title" ]]; then echo -e "  ${BOLD}▸ ${title}${NC}"; fi
+    if [[ -n "$subtitle" ]]; then echo -e "  ${CYAN}${subtitle}${NC}"; fi
     echo -e "  日志: ${LOG_FILE}"
     echo ""
 }
