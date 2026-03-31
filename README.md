@@ -5,7 +5,7 @@
 ## 快速开始
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
   | sudo bash -s -- <service> [args...]
 ```
 
@@ -24,15 +24,15 @@ curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/main/install.s
 
 ```bash
 # 初始化 master 节点
-curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
   | sudo bash -s -- k8s master
 
 # 初始化 worker 节点
-curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
   | sudo bash -s -- k8s worker
 
 # 全自动模式（跳过确认）
-curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
   | sudo bash -s -- k8s master --yes
 ```
 
@@ -124,7 +124,7 @@ set -euo pipefail
 
 # 加载公共库（兼容三种执行方式）
 _load_lib() {
-    local bootstrap_url="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/main}"
+    local bootstrap_url="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/master}"
     local tmp_lib="/tmp/_bootstrap_lib_$$.sh"
     local candidates=(
         "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)/../common/lib.sh"

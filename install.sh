@@ -3,7 +3,7 @@
 # install.sh — bootstrap 统一入口
 #
 # 用法:
-#   curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/main/install.sh \
+#   curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
 #     | sudo bash -s -- <service> [args...]
 #
 # 示例:
@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/main}"
+BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/master}"
 TMP_DIR="/tmp/bootstrap-$$"
 
 # ────────────────────────────────────────────────────────────

@@ -164,7 +164,7 @@ preflight_base() {
 # 远程 lib 加载助手
 # 子脚本在远程执行时用此函数动态加载 lib.sh
 # ────────────────────────────────────────────────────────────
-BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/main}"
+BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/master}"
 
 load_lib_remote() {
     local tmp_lib="/tmp/_bootstrap_lib.sh"

@@ -7,7 +7,7 @@
 #   sudo ./k8s/install.sh worker [--yes]
 #
 # 远程执行（通过顶层 install.sh 分发）:
-#   curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/main/install.sh \
+#   curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
 #     | sudo bash -s -- k8s master
 # ============================================================
 
@@ -20,7 +20,7 @@ set -euo pipefail
 #   3. curl | bash 直接执行子脚本（不推荐，但兜底支持）
 # ────────────────────────────────────────────────────────────
 _load_lib() {
-    local bootstrap_url="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/main}"
+    local bootstrap_url="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/master}"
     local tmp_lib="/tmp/_bootstrap_lib_$$.sh"
 
     # 候选路径列表（按优先级）
