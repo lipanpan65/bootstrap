@@ -44,6 +44,9 @@ cd bootstrap
 
 sudo ./k8s/install.sh master
 sudo ./k8s/install.sh worker --yes
+
+# worker 加入后，为未标记节点打上 worker 角色标签
+sudo ./k8s/install.sh label-workers
 ```
 
 ## 目录结构
@@ -83,11 +86,18 @@ bootstrap/
 - 安装 kubelet / kubeadm / kubectl（阿里云源，锁定 v1.30）
 - 预拉取镜像
 
-**2. Flannel 镜像处理（ghcr.io 国内无法访问）**
+**2. Flannel 镜像处理**
 
-在海外节点导出：
+脚本会按以下顺序自动处理 Flannel 镜像：
+
+1. 检测当前目录是否有 `flannel.tar` / `flannel-cni.tar`，有则直接导入
+2. 尝试从 ghcr.io 直接拉取（海外节点自动走此路径）
+3. 以上均失败时，提示手动离线导入
+
+如需手动离线导入（国内节点 ghcr.io 不可达）：
 
 ```bash
+# 海外节点导出
 ctr -n k8s.io images pull ghcr.io/flannel-io/flannel:v0.28.1
 ctr -n k8s.io images pull ghcr.io/flannel-io/flannel-cni-plugin:v1.9.0-flannel1
 ctr -n k8s.io images export flannel.tar ghcr.io/flannel-io/flannel:v0.28.1
@@ -118,6 +128,8 @@ sudo ./k8s/install.sh label-workers
 
 - ✅ **幂等性** — 重复执行自动跳过已完成步骤
 - ✅ **阿里云镜像源** — 全程使用国内镜像，无需科学上网
+- ✅ **Flannel 智能拉取** — 自动尝试在线拉取，失败后回退到离线导入
+- ✅ **Worker 自动标记** — `label-workers` 子命令一键为未标记节点打上 worker 角色
 - ✅ **amd64 / arm64 自适应** — 自动识别架构
 - ✅ **分阶段确认** — 关键步骤前打印说明，支持 `--yes` 全自动
 - ✅ **日志记录** — 所有操作写入 `/var/log/k8s-install.log`
