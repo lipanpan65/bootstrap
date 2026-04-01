@@ -104,6 +104,16 @@ scp 到各节点当前目录，脚本会自动检测并导入。
 
 执行脚本后粘贴 master 输出的 join 命令即可。
 
+**5. 为 worker 节点打标签**
+
+worker 加入后默认 ROLES 显示 `<none>`，在 master 上执行：
+
+```bash
+sudo ./k8s/install.sh label-workers
+```
+
+自动为所有未标记的节点打上 `worker` 角色标签。
+
 ### 特性
 
 - ✅ **幂等性** — 重复执行自动跳过已完成步骤

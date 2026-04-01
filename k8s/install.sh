@@ -76,8 +76,9 @@ ROLE=""
 usage() {
     echo ""
     echo -e "${BOLD}用法:${NC}"
-    echo "  $0 master [--yes]    初始化 master 节点"
-    echo "  $0 worker [--yes]    初始化 worker 节点"
+    echo "  $0 master [--yes]         初始化 master 节点"
+    echo "  $0 worker [--yes]         初始化 worker 节点"
+    echo "  $0 label-workers          为未标记的节点打上 worker 标签"
     echo ""
     echo -e "${BOLD}选项:${NC}"
     echo "  --yes / -y    跳过所有确认提示，自动执行"
@@ -89,7 +90,7 @@ if [[ $# -eq 0 ]]; then usage; fi
 
 for arg in "$@"; do
     case "$arg" in
-        master|worker) ROLE="$arg" ;;
+        master|worker|label-workers) ROLE="$arg" ;;
         --yes|-y)      AUTO_YES=true ;;
         --help|-h)     usage ;;
         *) echo "未知参数: $arg"; usage ;;
@@ -391,13 +392,7 @@ init_master() {
         warn "等待超时（120s），节点尚未 Ready，请手动检查: kubectl get nodes"
     fi
 
-    # 为没有角色标签的节点自动打上 worker 标签
-    local node
-    while IFS= read -r node; do
-        [[ -z "$node" ]] && continue
-        kubectl label node "$node" node-role.kubernetes.io/worker= --overwrite 2>/dev/null \
-            && ok "节点 ${node} 已标记为 worker"
-    done < <(kubectl get nodes --no-headers 2>/dev/null | awk '$3 == "<none>" {print $1}')
+    label_workers
 
     # 保存 join 命令
     local join_cmd_file="/root/k8s-join-command.sh"
@@ -430,6 +425,23 @@ EOF
     echo -e "查看节点状态: ${CYAN}kubectl get nodes${NC}"
     echo -e "查看系统组件: ${CYAN}kubectl get pods -n kube-system${NC}"
     echo ""
+}
+
+# ────────────────────────────────────────────────────────────
+# 为未标记的节点打上 worker 标签
+# ────────────────────────────────────────────────────────────
+label_workers() {
+    local labeled=false
+    local node
+    while IFS= read -r node; do
+        [[ -z "$node" ]] && continue
+        kubectl label node "$node" node-role.kubernetes.io/worker= --overwrite 2>/dev/null \
+            && ok "节点 ${node} 已标记为 worker" && labeled=true
+    done < <(kubectl get nodes --no-headers 2>/dev/null | awk '$3 == "<none>" {print $1}')
+
+    if [[ "$labeled" == false ]]; then
+        ok "所有节点已有角色标签，无需标记"
+    fi
 }
 
 # ────────────────────────────────────────────────────────────
@@ -482,6 +494,15 @@ join_worker() {
 # ────────────────────────────────────────────────────────────
 main() {
     mkdir -p "$(dirname "$LOG_FILE")"
+
+    # 轻量子命令：不走完整安装流程
+    if [[ "$ROLE" == "label-workers" ]]; then
+        require_root
+        step "为 worker 节点打标签"
+        label_workers
+        return
+    fi
+
     echo "=== K8s 安装开始 $(date) | 角色: $ROLE ===" >> "$LOG_FILE"
 
     print_banner "K8s 集群安装 — ${ROLE}" "版本: ${K8S_PATCH_VERSION} | 镜像源: 阿里云"
