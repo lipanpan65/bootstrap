@@ -45,8 +45,10 @@ _load_lib() {
         || { echo "❌ 无法加载 common/lib.sh"; exit 1; }
     # shellcheck source=/dev/null
     source "$tmp_lib"
-    # 注册清理（追加到已有 trap，避免覆盖）
-    trap 'rm -f '"$tmp_lib"'; '"$(trap -p EXIT | sed "s/^trap -- '//;s/' EXIT$//")"'' EXIT
+    # 注册清理
+    _bootstrap_tmp_lib="$tmp_lib"
+    _bootstrap_cleanup_lib() { rm -f "$_bootstrap_tmp_lib"; }
+    trap '_bootstrap_cleanup_lib' EXIT
 }
 
 _load_lib
@@ -113,7 +115,7 @@ setup_prerequisites() {
     else
         ok "swap 本已关闭，跳过"
     fi
-    sed -i '/ swap / s/^\([^#]\)/#\1/' /etc/fstab
+    sed -i '/\sswap\s/ s/^[^#]/#&/' /etc/fstab
 
     # 内核模块
     cat > /etc/modules-load.d/k8s.conf <<EOF
@@ -238,7 +240,9 @@ pull_images() {
         ok "K8s 核心镜像拉取完成"
     fi
 
-    ctr -n k8s.io images pull "${CONTAINERD_PAUSE_IMAGE}"
+    if ! ctr -n k8s.io images pull "${CONTAINERD_PAUSE_IMAGE}"; then
+        error "pause 镜像拉取失败，请检查网络后重试"
+    fi
     ctr -n k8s.io images tag \
         "${CONTAINERD_PAUSE_IMAGE}" \
         "registry.k8s.io/pause:3.10.1" 2>/dev/null || true
@@ -440,7 +444,8 @@ join_worker() {
     # 去掉用户可能多输入的 sudo 前缀（脚本本身已是 root）
     JOIN_CMD="${JOIN_CMD#sudo }"
 
-    ${JOIN_CMD} 2>&1 | tee -a "$LOG_FILE"
+    read -ra JOIN_ARGS <<< "$JOIN_CMD"
+    "${JOIN_ARGS[@]}" 2>&1 | tee -a "$LOG_FILE"
 
     if [[ -f /etc/kubernetes/kubelet.conf ]]; then
         ok "worker 节点已成功加入集群"

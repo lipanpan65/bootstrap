@@ -107,4 +107,4 @@ echo ""
 # cd 到 TMP_DIR，子脚本通过 $(pwd)/common/lib.sh 能找到 lib
 export BOOTSTRAP_BASE_URL
 cd "${TMP_DIR}"
-exec bash "install.sh" "$@"
+bash "install.sh" "$@"

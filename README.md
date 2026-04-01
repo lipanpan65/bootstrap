@@ -136,6 +136,9 @@ _load_lib() {
     curl -fsSL "${bootstrap_url}/common/lib.sh" -o "$tmp_lib" \
         || { echo "无法加载 common/lib.sh"; exit 1; }
     source "$tmp_lib"
+    _bootstrap_tmp_lib="$tmp_lib"
+    _bootstrap_cleanup_lib() { rm -f "$_bootstrap_tmp_lib"; }
+    trap '_bootstrap_cleanup_lib' EXIT
 }
 _load_lib
 
@@ -157,4 +160,4 @@ chmod +x myservice/install.sh
 
 ## License
 
-MIT
+Apache 2.0

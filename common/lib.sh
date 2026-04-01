@@ -66,7 +66,7 @@ step()  {
     echo "[$(date '+%H:%M:%S')] STEP: $*" >> "$LOG_FILE"
 }
 
-info()  { echo -e "  ${CYAN}→${NC} $*"; echo "    $*" >> "$LOG_FILE" 2>/dev/null || true; }
+info()  { _ensure_log_file; echo -e "  ${CYAN}→${NC} $*"; echo "    $*" >> "$LOG_FILE" 2>/dev/null || true; }
 
 # ────────────────────────────────────────────────────────────
 # 交互函数
@@ -163,20 +163,9 @@ preflight_base() {
 }
 
 # ────────────────────────────────────────────────────────────
-# 远程 lib 加载助手
-# 子脚本在远程执行时用此函数动态加载 lib.sh
+# 公共常量
 # ────────────────────────────────────────────────────────────
 BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://raw.githubusercontent.com/lipanpan65/bootstrap/master}"
-
-load_lib_remote() {
-    local tmp_lib="/tmp/_bootstrap_lib.sh"
-    if [[ ! -f "$tmp_lib" ]]; then
-        curl -fsSL "${BOOTSTRAP_BASE_URL}/common/lib.sh" -o "$tmp_lib" \
-            || { echo "❌ 无法下载 common/lib.sh"; exit 1; }
-    fi
-    # shellcheck source=/dev/null
-    source "$tmp_lib"
-}
 
 # ────────────────────────────────────────────────────────────
 # Banner 打印
