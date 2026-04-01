@@ -67,6 +67,8 @@ CONTAINERD_PAUSE_IMAGE="${K8S_IMAGE_REPO}/pause:3.10.1"
 POD_NETWORK_CIDR="10.244.0.0/16"
 FLANNEL_VERSION="v0.28.1"
 FLANNEL_CNI_VERSION="v1.9.0-flannel1"
+DASHBOARD_VERSION="v2.7.0"
+DASHBOARD_NODEPORT=30443
 
 # ────────────────────────────────────────────────────────────
 # 参数解析
@@ -78,6 +80,7 @@ usage() {
     echo -e "${BOLD}用法:${NC}"
     echo "  $0 master [--yes]         初始化 master 节点"
     echo "  $0 worker [--yes]         初始化 worker 节点"
+    echo "  $0 dashboard [--yes]      安装 K8s Dashboard"
     echo "  $0 label-workers          为未标记的节点打上 worker 标签"
     echo ""
     echo -e "${BOLD}选项:${NC}"
@@ -90,7 +93,7 @@ if [[ $# -eq 0 ]]; then usage; fi
 
 for arg in "$@"; do
     case "$arg" in
-        master|worker|label-workers) ROLE="$arg" ;;
+        master|worker|dashboard|label-workers) ROLE="$arg" ;;
         --yes|-y)      AUTO_YES=true ;;
         --help|-h)     usage ;;
         *) echo "未知参数: $arg"; usage ;;
@@ -490,6 +493,195 @@ join_worker() {
 }
 
 # ────────────────────────────────────────────────────────────
+# Dashboard 安装
+# ────────────────────────────────────────────────────────────
+install_dashboard() {
+    print_banner "K8s Dashboard 安装" "版本: ${DASHBOARD_VERSION} | 端口: ${DASHBOARD_NODEPORT}"
+
+    # ── Step 1/5: 前置检查 ──
+    step "[Step 1/5] 前置检查"
+    info "验证 kubectl 是否可用"
+    info "验证集群节点是否 Ready"
+    info "检查 Dashboard 是否已安装"
+    confirm
+
+    require_root
+
+    if [[ ! -f /etc/kubernetes/admin.conf ]]; then
+        error "未找到 admin.conf，请先执行 '$0 master' 初始化集群"
+    fi
+
+    export KUBECONFIG=/etc/kubernetes/admin.conf
+
+    if ! kubectl get nodes &>/dev/null; then
+        error "无法连接集群，请检查 kubectl 配置"
+    fi
+    ok "集群连接正常"
+
+    local ready_nodes
+    ready_nodes=$(kubectl get nodes --no-headers 2>/dev/null | grep -c " Ready" || true)
+    if [[ "$ready_nodes" -eq 0 ]]; then
+        error "没有 Ready 状态的节点，请先确保集群正常运行"
+    fi
+    ok "集群有 ${ready_nodes} 个 Ready 节点"
+
+    # ── Step 2/5: 部署 Dashboard ──
+    step "[Step 2/5] 部署 Dashboard"
+    info "部署 Dashboard ${DASHBOARD_VERSION} 到 kubernetes-dashboard namespace"
+    info "包含: Dashboard Web UI、Metrics Scraper、相关 RBAC 配置"
+    confirm
+
+    local dashboard_yaml="/tmp/dashboard-${DASHBOARD_VERSION}.yaml"
+    local dashboard_url="https://raw.githubusercontent.com/kubernetes/dashboard/${DASHBOARD_VERSION}/aio/deploy/recommended.yaml"
+
+    if kubectl get namespace kubernetes-dashboard &>/dev/null; then
+        ok "kubernetes-dashboard namespace 已存在，更新部署..."
+    fi
+
+    if [[ ! -f "$dashboard_yaml" ]]; then
+        info "下载 Dashboard YAML..."
+        if ! curl -fsSL --max-time 30 "$dashboard_url" -o "$dashboard_yaml"; then
+            error "无法下载 Dashboard YAML，请检查网络: ${dashboard_url}"
+        fi
+        ok "Dashboard YAML 下载完成"
+    fi
+
+    kubectl apply -f "$dashboard_yaml"
+    ok "Dashboard 资源已部署"
+
+    info "等待 Dashboard Deployment 就绪（最多 120s）..."
+    if kubectl -n kubernetes-dashboard rollout status deployment/kubernetes-dashboard --timeout=120s 2>/dev/null; then
+        ok "Dashboard Deployment 已就绪"
+    else
+        warn "Dashboard 尚未就绪，请稍后检查: kubectl -n kubernetes-dashboard get pods"
+    fi
+
+    # ── Step 3/5: 创建管理员账户 ──
+    step "[Step 3/5] 创建管理员账户"
+    info "创建 ServiceAccount: admin（用于 Dashboard 登录认证）"
+    info "创建 ClusterRoleBinding: 将 admin 绑定到 cluster-admin 角色"
+    info "说明: cluster-admin 拥有集群最高权限，生产环境建议使用更细粒度的 RBAC"
+    confirm
+
+    kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin
+  namespace: kubernetes-dashboard
+EOF
+    ok "ServiceAccount admin 已创建"
+
+    kubectl apply -f - <<'EOF'
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-cluster-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin
+  namespace: kubernetes-dashboard
+EOF
+    ok "ClusterRoleBinding admin-cluster-binding 已创建"
+
+    # ── Step 4/5: 暴露服务 ──
+    step "[Step 4/5] 暴露服务（NodePort）"
+    info "将 Dashboard Service 类型从 ClusterIP 改为 NodePort"
+    info "固定端口: ${DASHBOARD_NODEPORT}（443 = HTTPS 默认端口，方便记忆）"
+    info "修改后可通过 https://<节点IP>:${DASHBOARD_NODEPORT} 访问"
+    confirm
+
+    kubectl -n kubernetes-dashboard patch svc kubernetes-dashboard \
+        -p "{\"spec\":{\"type\":\"NodePort\",\"ports\":[{\"port\":443,\"nodePort\":${DASHBOARD_NODEPORT}}]}}"
+
+    # 验证 NodePort 是否生效
+    local actual_port
+    actual_port=$(kubectl -n kubernetes-dashboard get svc kubernetes-dashboard -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null)
+    if [[ "$actual_port" == "${DASHBOARD_NODEPORT}" ]]; then
+        ok "Dashboard 已暴露到 NodePort ${DASHBOARD_NODEPORT}"
+    else
+        warn "NodePort 设置可能未生效，请手动检查: kubectl -n kubernetes-dashboard get svc kubernetes-dashboard"
+    fi
+
+    # ── Step 5/5: 生成访问凭证 ──
+    step "[Step 5/5] 生成访问凭证"
+    info "为 admin 创建长期 Token（Secret 方式，不过期）"
+    info "说明: K8s v1.24+ 不再自动生成永久 token，需手动创建 Secret"
+    confirm
+
+    kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-secret
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/service-account.name: admin
+type: kubernetes.io/service-account-token
+EOF
+
+    # 等待 token 生成
+    local token=""
+    local retry=0
+    while [[ -z "$token" && $retry -lt 10 ]]; do
+        token=$(kubectl -n kubernetes-dashboard get secret admin-secret -o jsonpath='{.data.token}' 2>/dev/null | base64 -d 2>/dev/null || true)
+        if [[ -z "$token" ]]; then
+            sleep 1
+            retry=$((retry + 1))
+        fi
+    done
+
+    if [[ -z "$token" ]]; then
+        error "Token 生成失败，请手动检查: kubectl -n kubernetes-dashboard get secret admin-secret"
+    fi
+
+    # 保存 token
+    local token_file="/root/dashboard-token.txt"
+    cat > "$token_file" <<TOKENEOF
+# K8s Dashboard 登录 Token
+# 生成时间: $(date)
+# 账户: admin (ServiceAccount)
+# 权限: cluster-admin
+# 有效期: 永久（删除 Secret 可吊销）
+
+${token}
+TOKENEOF
+    chmod 600 "$token_file"
+    ok "Token 已保存到 ${token_file}"
+
+    # 获取节点 IP
+    local node_ip
+    node_ip=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
+
+    # 打印完成信息
+    echo ""
+    echo -e "${BOLD}${GREEN}============================================================${NC}"
+    echo -e "${BOLD}${GREEN}  🎉 K8s Dashboard 安装完成！${NC}"
+    echo -e "${BOLD}${GREEN}============================================================${NC}"
+    echo ""
+    echo -e "${BOLD}访问地址:${NC}"
+    echo -e "  ${CYAN}https://${node_ip}:${DASHBOARD_NODEPORT}${NC}"
+    echo ""
+    echo -e "${BOLD}登录方式:${NC}"
+    echo -e "  选择 Token，粘贴以下内容："
+    echo ""
+    echo -e "  ${CYAN}${token}${NC}"
+    echo ""
+    echo -e "${BOLD}Token 文件:${NC} ${token_file}"
+    echo ""
+    echo -e "${YELLOW}⚠️  注意事项：${NC}"
+    echo "  1. 浏览器会提示证书不安全（自签证书），点击「高级」→「继续访问」"
+    echo "  2. 云服务器需在安全组中放行 ${DASHBOARD_NODEPORT} 端口（TCP）"
+    echo ""
+    echo -e "查看 Dashboard 状态: ${CYAN}kubectl -n kubernetes-dashboard get pods${NC}"
+    echo ""
+}
+
+# ────────────────────────────────────────────────────────────
 # 主流程
 # ────────────────────────────────────────────────────────────
 main() {
@@ -500,6 +692,11 @@ main() {
         require_root
         step "为 worker 节点打标签"
         label_workers
+        return
+    fi
+
+    if [[ "$ROLE" == "dashboard" ]]; then
+        install_dashboard
         return
     fi
 
