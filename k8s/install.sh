@@ -391,6 +391,14 @@ init_master() {
         warn "等待超时（120s），节点尚未 Ready，请手动检查: kubectl get nodes"
     fi
 
+    # 为没有角色标签的节点自动打上 worker 标签
+    local node
+    while IFS= read -r node; do
+        [[ -z "$node" ]] && continue
+        kubectl label node "$node" node-role.kubernetes.io/worker= --overwrite 2>/dev/null \
+            && ok "节点 ${node} 已标记为 worker"
+    done < <(kubectl get nodes --no-headers 2>/dev/null | awk '$3 == "<none>" {print $1}')
+
     # 保存 join 命令
     local join_cmd_file="/root/k8s-join-command.sh"
     local join_cmd
