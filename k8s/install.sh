@@ -256,6 +256,8 @@ pull_images() {
 import_flannel_images() {
     step "[Step 5/6] 导入 Flannel 镜像"
 
+    local flannel_image="ghcr.io/flannel-io/flannel:${FLANNEL_VERSION}"
+    local flannel_cni_image="ghcr.io/flannel-io/flannel-cni-plugin:${FLANNEL_CNI_VERSION}"
     local flannel_tar="flannel.tar"
     local flannel_cni_tar="flannel-cni.tar"
 
@@ -265,42 +267,51 @@ import_flannel_images() {
         return
     fi
 
-    _do_import() {
-        ctr -n k8s.io images import "./${flannel_tar}"
-        ctr -n k8s.io images import "./${flannel_cni_tar}"
-        ok "Flannel 镜像导入完成"
-    }
-
+    # 方式 1：本地 tar 文件导入
     if [[ -f "./${flannel_tar}" && -f "./${flannel_cni_tar}" ]]; then
         info "在当前目录找到 Flannel tar 文件，准备导入"
         confirm
-        _do_import
+        ctr -n k8s.io images import "./${flannel_tar}"
+        ctr -n k8s.io images import "./${flannel_cni_tar}"
+        ok "Flannel 镜像导入完成"
+        return
+    fi
+
+    # 方式 2：直接从 ghcr.io 拉取
+    info "尝试从 ghcr.io 直接拉取 Flannel 镜像..."
+    if ctr -n k8s.io images pull "$flannel_image" 2>/dev/null \
+        && ctr -n k8s.io images pull "$flannel_cni_image" 2>/dev/null; then
+        ok "Flannel 镜像拉取完成"
+        return
+    fi
+
+    # 方式 3：提示手动处理
+    warn "ghcr.io 不可达且未找到本地镜像包，请在海外节点执行以下命令："
+    echo ""
+    echo -e "${CYAN}  # ① 海外节点导出：${NC}"
+    echo "  ctr -n k8s.io images pull ${flannel_image}"
+    echo "  ctr -n k8s.io images pull ${flannel_cni_image}"
+    echo "  ctr -n k8s.io images export ${flannel_tar} ${flannel_image}"
+    echo "  ctr -n k8s.io images export ${flannel_cni_tar} ${flannel_cni_image}"
+    echo ""
+    echo -e "${CYAN}  # ② scp 到本机当前目录：${NC}"
+    echo "  scp ${flannel_tar} ${flannel_cni_tar} root@$(hostname -I | awk '{print $1}'):$(pwd)/"
+    echo ""
+
+    if [[ "$AUTO_YES" == true ]]; then
+        warn "--yes 模式跳过，请手动导入后重新运行"
+        return
+    fi
+
+    echo -e "${YELLOW}完成后按 Enter 重试导入，或 Ctrl+C 退出手动处理...${NC}"
+    read -r < /dev/tty || true
+
+    if [[ -f "./${flannel_tar}" && -f "./${flannel_cni_tar}" ]]; then
+        ctr -n k8s.io images import "./${flannel_tar}"
+        ctr -n k8s.io images import "./${flannel_cni_tar}"
+        ok "Flannel 镜像导入完成"
     else
-        warn "未找到 Flannel 镜像包，请在海外节点执行以下命令："
-        echo ""
-        echo -e "${CYAN}  # ① 海外节点导出：${NC}"
-        echo "  ctr -n k8s.io images pull ghcr.io/flannel-io/flannel:${FLANNEL_VERSION}"
-        echo "  ctr -n k8s.io images pull ghcr.io/flannel-io/flannel-cni-plugin:${FLANNEL_CNI_VERSION}"
-        echo "  ctr -n k8s.io images export ${flannel_tar} ghcr.io/flannel-io/flannel:${FLANNEL_VERSION}"
-        echo "  ctr -n k8s.io images export ${flannel_cni_tar} ghcr.io/flannel-io/flannel-cni-plugin:${FLANNEL_CNI_VERSION}"
-        echo ""
-        echo -e "${CYAN}  # ② scp 到本机当前目录：${NC}"
-        echo "  scp ${flannel_tar} ${flannel_cni_tar} root@$(hostname -I | awk '{print $1}'):$(pwd)/"
-        echo ""
-
-        if [[ "$AUTO_YES" == true ]]; then
-            warn "--yes 模式跳过，请手动导入后重新运行"
-            return
-        fi
-
-        echo -e "${YELLOW}完成后按 Enter 重试导入，或 Ctrl+C 退出手动处理...${NC}"
-        read -r < /dev/tty || true
-
-        if [[ -f "./${flannel_tar}" && -f "./${flannel_cni_tar}" ]]; then
-            _do_import
-        else
-            warn "仍未找到文件，跳过。master 初始化后请手动导入并 apply Flannel"
-        fi
+        warn "仍未找到文件，跳过。master 初始化后请手动导入并 apply Flannel"
     fi
 }
 
