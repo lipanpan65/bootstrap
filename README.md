@@ -34,6 +34,10 @@ curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install
 # 全自动模式（跳过确认）
 curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
   | sudo bash -s -- k8s master --yes
+
+# worker 加入后，为未标记节点打上 worker 角色标签
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
+  | sudo bash -s -- k8s label-workers
 ```
 
 ### 直接执行子脚本（本地克隆后）
@@ -178,7 +182,7 @@ EOF
 chmod +x myservice/install.sh
 ```
 
-公共库 `common/lib.sh` 提供：`log` `ok` `warn` `error` `step` `info` `confirm` `preflight_base` `cmd_exists` `service_running` `get_arch` `get_ubuntu_codename`
+公共库 `common/lib.sh` 提供：`log` `ok` `warn` `error` `step` `info` `confirm` `print_banner` `preflight_base` `require_root` `cmd_exists` `service_running` `get_arch` `get_ubuntu_codename` `get_mem_gb` `check_connectivity`
 
 ## License
 
