@@ -181,6 +181,20 @@ check_port_available() {
     ok "端口 ${port} 可用"
 }
 
+# 检查组件是否在运行（兼容 systemd 和容器环境）
+component_running() {
+    local service_name="$1"   # systemd 服务名
+    local process_name="$2"   # 进程名（用于 pgrep 兜底）
+
+    # 优先用 systemctl
+    if cmd_exists systemctl && service_running "$service_name"; then
+        return 0
+    fi
+
+    # 兜底：检查进程是否存在
+    pgrep -x "$process_name" &>/dev/null
+}
+
 # 下载并解压二进制包
 # 注意: 此函数通过 echo 返回解压目录路径，所有日志输出重定向到 fd3 避免污染返回值
 download_and_extract() {
@@ -228,7 +242,7 @@ install_server_preflight() {
     preflight_base "Prometheus Server" 2
 
     # 幂等：已安装则检查是否在运行
-    if service_running prometheus; then
+    if component_running prometheus prometheus; then
         local ver
         ver=$(/usr/local/bin/prometheus --version 2>&1 | head -1 | awk '{print $3}' || echo "unknown")
         warn "Prometheus (${ver}) 已在运行。继续将覆盖安装"
@@ -470,7 +484,7 @@ install_node_exporter_preflight() {
 
     preflight_base "Node Exporter" 0
 
-    if service_running prometheus-node-exporter; then
+    if component_running prometheus-node-exporter node_exporter; then
         local ver
         ver=$(/usr/local/bin/node_exporter --version 2>&1 | head -1 | awk '{print $3}' || echo "unknown")
         warn "Node Exporter (${ver}) 已在运行。继续将覆盖安装"
@@ -617,7 +631,7 @@ install_alertmanager_preflight() {
 
     preflight_base "Alertmanager" 0
 
-    if service_running prometheus-alertmanager; then
+    if component_running prometheus-alertmanager alertmanager; then
         local ver
         ver=$(/usr/local/bin/alertmanager --version 2>&1 | head -1 | awk '{print $3}' || echo "unknown")
         warn "Alertmanager (${ver}) 已在运行。继续将覆盖安装"
@@ -828,7 +842,7 @@ enable_scrape_targets() {
     local changed=false
 
     # 如果 node-exporter 已安装且配置中是注释状态，则取消注释
-    if service_running prometheus-node-exporter; then
+    if component_running prometheus-node-exporter node_exporter; then
         if grep -q '# - job_name: "node"' "$config"; then
             sed -i \
                 -e 's/^  # - job_name: "node"/  - job_name: "node"/' \
@@ -841,7 +855,7 @@ enable_scrape_targets() {
     fi
 
     # 如果 alertmanager 已安装，启用相关配置
-    if service_running prometheus-alertmanager; then
+    if component_running prometheus-alertmanager alertmanager; then
         if grep -q '# alerting:' "$config"; then
             sed -i \
                 -e 's/^# alerting:/alerting:/' \
@@ -879,13 +893,13 @@ print_summary() {
     echo -e "${BOLD}${GREEN}============================================================${NC}"
     echo ""
 
-    if service_running prometheus; then
+    if component_running prometheus prometheus; then
         echo -e "  ${GREEN}✅${NC} Prometheus Server  → ${CYAN}http://localhost:${PROMETHEUS_PORT}${NC}"
     fi
-    if service_running prometheus-node-exporter; then
+    if component_running prometheus-node-exporter node_exporter; then
         echo -e "  ${GREEN}✅${NC} Node Exporter      → ${CYAN}http://localhost:${NODE_EXPORTER_PORT}/metrics${NC}"
     fi
-    if service_running prometheus-alertmanager; then
+    if component_running prometheus-alertmanager alertmanager; then
         echo -e "  ${GREEN}✅${NC} Alertmanager       → ${CYAN}http://localhost:${ALERTMANAGER_PORT}${NC}"
     fi
 
@@ -918,7 +932,7 @@ main() {
             print_banner "Node Exporter 安装" "版本: ${NODE_EXPORTER_VERSION} | 端口: ${NODE_EXPORTER_PORT}"
             install_node_exporter
             # 如果 server 也在本机运行，自动启用 scrape
-            if service_running prometheus; then
+            if component_running prometheus prometheus; then
                 enable_scrape_targets
             fi
             ;;
@@ -926,7 +940,7 @@ main() {
             print_banner "Alertmanager 安装" "版本: ${ALERTMANAGER_VERSION} | 端口: ${ALERTMANAGER_PORT}"
             install_alertmanager
             # 如果 server 也在本机运行，自动启用关联
-            if service_running prometheus; then
+            if component_running prometheus prometheus; then
                 enable_scrape_targets
             fi
             ;;
