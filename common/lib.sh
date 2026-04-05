@@ -81,7 +81,7 @@ confirm() {
     # 非交互终端（如 crontab、管道、容器）无法等待用户输入
     # 用 read -t 0 实际测试 /dev/tty 是否可读，比 : < /dev/tty 更准确
     if ! read -t 0 < /dev/tty 2>/dev/null; then
-        warn "检测到非交互终端，自动跳过确认（等同于 --yes）"
+        warn "检测到非交互终端，自动跳过确认（添加 --yes 可消除此提示）"
         return 0
     fi
     echo ""
