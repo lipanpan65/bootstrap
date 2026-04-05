@@ -361,7 +361,8 @@ PROMYML
     ok "配置文件语法检查通过"
 
     # systemd 服务文件
-    cat > /etc/systemd/system/prometheus.service <<SERVICEEOF
+    if cmd_exists systemctl; then
+        cat > /etc/systemd/system/prometheus.service <<SERVICEEOF
 [Unit]
 Description=Prometheus Monitoring System
 Documentation=https://prometheus.io/docs/
@@ -387,19 +388,44 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 SERVICEEOF
-    ok "systemd 服务文件已创建"
+        ok "systemd 服务文件已创建"
+    else
+        warn "未检测到 systemctl，跳过 systemd 服务文件创建"
+    fi
 }
 
 install_server_start() {
     step "[Step 5/5] 启动与验证"
-    info "systemctl daemon-reload"
-    info "systemctl enable --now prometheus"
+
+    local start_cmd="/usr/local/bin/prometheus \
+--config.file=/etc/prometheus/prometheus.yml \
+--storage.tsdb.path=${PROMETHEUS_DATA_DIR} \
+--storage.tsdb.retention.time=${PROMETHEUS_RETENTION} \
+--web.listen-address=0.0.0.0:${PROMETHEUS_PORT} \
+--web.console.templates=/etc/prometheus/consoles \
+--web.console.libraries=/etc/prometheus/console_libraries \
+--web.enable-lifecycle"
+
+    if cmd_exists systemctl; then
+        info "systemctl daemon-reload"
+        info "systemctl enable --now prometheus"
+    else
+        warn "未检测到 systemctl（容器环境），将直接启动进程"
+        info "nohup su -s /bin/bash prometheus -c '${start_cmd}'"
+    fi
     info "健康检查: curl -sf http://localhost:${PROMETHEUS_PORT}/-/healthy"
     info "就绪检查: curl -sf http://localhost:${PROMETHEUS_PORT}/-/ready"
     confirm
 
-    systemctl daemon-reload
-    systemctl enable --now prometheus --quiet
+    if cmd_exists systemctl; then
+        systemctl daemon-reload
+        systemctl enable --now prometheus --quiet
+    else
+        # 容器环境：直接启动进程
+        nohup su -s /bin/bash prometheus -c "$start_cmd" > /var/log/prometheus.log 2>&1 &
+        ok "Prometheus 已通过 nohup 后台启动（PID: $!）"
+        ok "日志: /var/log/prometheus.log"
+    fi
 
     # 等待启动
     local healthy=false
@@ -415,7 +441,11 @@ install_server_start() {
         ok "Prometheus Server 已启动并健康"
         ok "Web UI: http://localhost:${PROMETHEUS_PORT}"
     else
-        warn "健康检查未通过，请检查日志: journalctl -u prometheus -f"
+        if cmd_exists systemctl; then
+            warn "健康检查未通过，请检查日志: journalctl -u prometheus -f"
+        else
+            warn "健康检查未通过，请检查日志: /var/log/prometheus.log"
+        fi
     fi
 }
 
@@ -487,12 +517,17 @@ install_node_exporter_binary() {
 
 install_node_exporter_config() {
     step "[Step 4/5] 配置 systemd 服务"
-    info "创建 /etc/systemd/system/prometheus-node-exporter.service"
-    info "  ExecStart: node_exporter --web.listen-address=0.0.0.0:${NODE_EXPORTER_PORT}"
-    info "  User: node_exporter"
+    if cmd_exists systemctl; then
+        info "创建 /etc/systemd/system/prometheus-node-exporter.service"
+        info "  ExecStart: node_exporter --web.listen-address=0.0.0.0:${NODE_EXPORTER_PORT}"
+        info "  User: node_exporter"
+    else
+        warn "未检测到 systemctl，跳过 systemd 服务文件创建"
+    fi
     confirm
 
-    cat > /etc/systemd/system/prometheus-node-exporter.service <<SERVICEEOF
+    if cmd_exists systemctl; then
+        cat > /etc/systemd/system/prometheus-node-exporter.service <<SERVICEEOF
 [Unit]
 Description=Prometheus Node Exporter
 Documentation=https://prometheus.io/docs/guides/node-exporter/
@@ -511,18 +546,33 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 SERVICEEOF
-    ok "systemd 服务文件已创建"
+        ok "systemd 服务文件已创建"
+    fi
 }
 
 install_node_exporter_start() {
     step "[Step 5/5] 启动与验证"
-    info "systemctl daemon-reload"
-    info "systemctl enable --now prometheus-node-exporter"
+
+    local start_cmd="/usr/local/bin/node_exporter --web.listen-address=0.0.0.0:${NODE_EXPORTER_PORT}"
+
+    if cmd_exists systemctl; then
+        info "systemctl daemon-reload"
+        info "systemctl enable --now prometheus-node-exporter"
+    else
+        warn "未检测到 systemctl（容器环境），将直接启动进程"
+        info "nohup su -s /bin/bash node_exporter -c '${start_cmd}'"
+    fi
     info "验证指标端点: curl -sf http://localhost:${NODE_EXPORTER_PORT}/metrics"
     confirm
 
-    systemctl daemon-reload
-    systemctl enable --now prometheus-node-exporter --quiet
+    if cmd_exists systemctl; then
+        systemctl daemon-reload
+        systemctl enable --now prometheus-node-exporter --quiet
+    else
+        nohup su -s /bin/bash node_exporter -c "$start_cmd" > /var/log/node_exporter.log 2>&1 &
+        ok "Node Exporter 已通过 nohup 后台启动（PID: $!）"
+        ok "日志: /var/log/node_exporter.log"
+    fi
 
     # 等待启动
     local ready=false
@@ -538,7 +588,11 @@ install_node_exporter_start() {
         ok "Node Exporter 已启动"
         ok "指标端点: http://localhost:${NODE_EXPORTER_PORT}/metrics"
     else
-        warn "启动检查未通过，请检查日志: journalctl -u prometheus-node-exporter -f"
+        if cmd_exists systemctl; then
+            warn "启动检查未通过，请检查日志: journalctl -u prometheus-node-exporter -f"
+        else
+            warn "启动检查未通过，请检查日志: /var/log/node_exporter.log"
+        fi
     fi
 }
 
@@ -679,7 +733,8 @@ AMYML
     ok "配置文件语法检查通过"
 
     # systemd 服务文件
-    cat > /etc/systemd/system/prometheus-alertmanager.service <<SERVICEEOF
+    if cmd_exists systemctl; then
+        cat > /etc/systemd/system/prometheus-alertmanager.service <<SERVICEEOF
 [Unit]
 Description=Prometheus Alertmanager
 Documentation=https://prometheus.io/docs/alerting/latest/alertmanager/
@@ -700,18 +755,38 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 SERVICEEOF
-    ok "systemd 服务文件已创建"
+        ok "systemd 服务文件已创建"
+    else
+        warn "未检测到 systemctl，跳过 systemd 服务文件创建"
+    fi
 }
 
 install_alertmanager_start() {
     step "[Step 5/5] 启动与验证"
-    info "systemctl daemon-reload"
-    info "systemctl enable --now prometheus-alertmanager"
+
+    local start_cmd="/usr/local/bin/alertmanager \
+--config.file=/etc/alertmanager/alertmanager.yml \
+--storage.path=/var/lib/alertmanager \
+--web.listen-address=0.0.0.0:${ALERTMANAGER_PORT}"
+
+    if cmd_exists systemctl; then
+        info "systemctl daemon-reload"
+        info "systemctl enable --now prometheus-alertmanager"
+    else
+        warn "未检测到 systemctl（容器环境），将直接启动进程"
+        info "nohup su -s /bin/bash alertmanager -c '${start_cmd}'"
+    fi
     info "健康检查: curl -sf http://localhost:${ALERTMANAGER_PORT}/-/healthy"
     confirm
 
-    systemctl daemon-reload
-    systemctl enable --now prometheus-alertmanager --quiet
+    if cmd_exists systemctl; then
+        systemctl daemon-reload
+        systemctl enable --now prometheus-alertmanager --quiet
+    else
+        nohup su -s /bin/bash alertmanager -c "$start_cmd" > /var/log/alertmanager.log 2>&1 &
+        ok "Alertmanager 已通过 nohup 后台启动（PID: $!）"
+        ok "日志: /var/log/alertmanager.log"
+    fi
 
     # 等待启动
     local healthy=false
@@ -727,7 +802,11 @@ install_alertmanager_start() {
         ok "Alertmanager 已启动并健康"
         ok "Web UI: http://localhost:${ALERTMANAGER_PORT}"
     else
-        warn "健康检查未通过，请检查日志: journalctl -u prometheus-alertmanager -f"
+        if cmd_exists systemctl; then
+            warn "健康检查未通过，请检查日志: journalctl -u prometheus-alertmanager -f"
+        else
+            warn "健康检查未通过，请检查日志: /var/log/alertmanager.log"
+        fi
     fi
 }
 
