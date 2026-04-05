@@ -78,9 +78,11 @@ confirm() {
     if [[ "$AUTO_YES" == true ]]; then
         return 0
     fi
-    # 非交互终端（如 crontab、管道）无法等待用户输入，直接报错
-    if [[ ! -e /dev/tty ]] || ! : < /dev/tty 2>/dev/null; then
-        error "检测到非交互终端，无法等待确认。请添加 --yes 参数以跳过确认提示"
+    # 非交互终端（如 crontab、管道、容器）无法等待用户输入
+    # 用 read -t 0 实际测试 /dev/tty 是否可读，比 : < /dev/tty 更准确
+    if ! read -t 0 < /dev/tty 2>/dev/null; then
+        warn "检测到非交互终端，自动跳过确认（等同于 --yes）"
+        return 0
     fi
     echo ""
     echo -e "${YELLOW}按 Enter 继续，Ctrl+C 退出...${NC}"
