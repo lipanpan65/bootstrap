@@ -18,6 +18,7 @@ curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install
 | `docker` | Docker / containerd 单独安装 | 🚧 开发中 |
 | `redis` | Redis | 🚧 开发中 |
 | `nginx` | Nginx | 🚧 开发中 |
+| `prometheus` | Prometheus 监控（Server / Node Exporter / Alertmanager） | ✅ 可用 |
 
 ## 使用示例
 
@@ -67,6 +68,32 @@ curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install
 ./pgsql/restore.sh --help
 ```
 
+### Prometheus 监控
+
+```bash
+# 安装 Prometheus Server（监控服务器��
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
+  | sudo bash -s -- prometheus server
+
+# 安装 Node Exporter（每台被监控机器）
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
+  | sudo bash -s -- prometheus node-exporter
+
+# 安装 Alertmanager（告警管理）
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
+  | sudo bash -s -- prometheus alertmanager
+
+# 一次安装全部组件
+curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
+  | sudo bash -s -- prometheus all --yes
+
+# 自定义版本和保留时间
+sudo ./prometheus/install.sh server -v 2.53.4 -r 30d --yes
+
+# 查看帮助
+./prometheus/install.sh --help
+```
+
 ### 直接执行子脚本（本地克隆后）
 
 ```bash
@@ -78,6 +105,9 @@ sudo ./k8s/install.sh worker --yes
 
 # worker 加入后，为未标记节点打上 worker 角色标签
 sudo ./k8s/install.sh label-workers
+
+# Prometheus 全组件安装
+sudo ./prometheus/install.sh all --yes
 ```
 
 ## 目录结构
@@ -96,10 +126,14 @@ bootstrap/
 │   ├── k8s-install.md          # K8s 安装详解
 │   ├── k8s-dashboard.md        # K8s Dashboard 详解
 │   ├── pgsql-backup-restore.md # PostgreSQL 备份恢复详解
-│   └── pgsql-test-plan.md      # PostgreSQL 测试方案
+│   ├── pgsql-test-plan.md      # PostgreSQL 测试方案
+│   └── prometheus-install.md   # Prometheus 安装详解
 │
 ├── k8s/
 │   └── install.sh          # K8s 集群安装（master / worker）
+│
+├── prometheus/
+│   └─�� install.sh          # Prometheus 监控安装（server / node-exporter / alertmanager）
 │
 └── pgsql/
     ├── backup.sh            # PostgreSQL 备份脚本
@@ -191,6 +225,38 @@ sudo ./k8s/install.sh label-workers
 - **分阶段确认** — 关键步骤前打印执行摘要，支持 `--yes` 全自动
 
 详见 [备份恢复详解](docs/pgsql-backup-restore.md)。
+
+## Prometheus 监控说明
+
+基于二进制部署 Prometheus 监控体系，包含三个组件：
+
+| 组件 | 部署位置 | 端口 | 说明 |
+|------|----------|------|------|
+| Prometheus Server | 监控服务器（1台） | 9090 | 核心：指标抓取、存储、查询 |
+| Node Exporter | 每台被监控机器（N台） | 9100 | 暴露机器级指标（CPU/内存/磁盘/网络） |
+| Alertmanager | 通常与 Server 同机（1台） | 9093 | 告警路由、分组、通知 |
+
+### 环境要求
+
+| 项目 | 要求 |
+|------|------|
+| 系统 | Ubuntu 20.04 / 22.04 / 24.04 |
+| 架构 | amd64 / arm64 |
+| 内存 | Server ≥ 2GB，Node Exporter / Alertmanager 无特殊要求 |
+| 网络 | 需能访问 GitHub releases 下载二进制包 |
+
+### 特性
+
+- **三组件独立安装** — 按需选择 server / node-exporter / alertmanager，或 all 一键全装
+- **幂等性** — 重复执行自动跳过已完成步骤，已有配置文件不覆盖
+- **自动关联** — 安装 node-exporter 或 alertmanager 时，自动启用 Prometheus 的 scrape 配置
+- **amd64 / arm64 自适应** — 自动识别架构下载对应二进制
+- **配置校验** — 安装后自动使用 promtool / amtool 验证配置语法
+- **健康检查** — 启动后自动验证 /-/healthy 端点
+- **分阶段确认** — 关键步骤前打印说明，支持 `--yes` 全自动
+- **日志记录** — 所有操作写入 `/var/log/prometheus-install.log`
+
+详见 [Prometheus 安装详解](docs/prometheus-install.md)。
 
 ## 开发指南
 

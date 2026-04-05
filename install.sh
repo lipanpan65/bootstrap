@@ -32,7 +32,7 @@ ok()    { echo -e "${GREEN}[OK]${NC}    ✅ $*"; }
 # ────────────────────────────────────────────────────────────
 # 支持的服务列表
 # ────────────────────────────────────────────────────────────
-SUPPORTED_SERVICES=("k8s" "docker" "redis" "nginx")
+SUPPORTED_SERVICES=("k8s" "docker" "redis" "nginx" "prometheus")
 
 usage() {
     echo ""
@@ -46,6 +46,7 @@ usage() {
     echo "  docker  [--yes]                   Docker / containerd"
     echo "  redis   [--yes]                   Redis"
     echo "  nginx   [--yes]                   Nginx"
+    echo "  prometheus [server|node-exporter|alertmanager|all] [--yes]  Prometheus 监控"
     echo ""
     echo -e "${BOLD}示例:${NC}"
     echo "  ... | sudo bash -s -- k8s master"

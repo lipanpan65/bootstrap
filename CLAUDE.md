@@ -2,10 +2,11 @@
 
 ## 项目概述
 
-bootstrap 是一个基于 `curl | bash` 的轻量化基础设施初始化脚本集，用 bash 编写。目前包含两个服务模块：
+bootstrap 是一个基于 `curl | bash` 的轻量化基础设施初始化脚本集，用 bash 编写。目前包含三个服务模块：
 
 - **k8s** — Kubernetes 集群一键安装（master / worker）
 - **pgsql** — PostgreSQL 数据库备份与恢复
+- **prometheus** — Prometheus 监控安装（server / node-exporter / alertmanager）
 
 ## 目录结构
 
@@ -18,6 +19,7 @@ bootstrap/
 ├── pgsql/restore.sh        # PG 恢复脚本
 ├── pgsql/test_pgsql.sh     # PG 单元测试（mock）
 ├── pgsql/test_integration.sh # PG 集成测试（需真实 PG）
+├── prometheus/install.sh   # Prometheus 监控安装脚本
 └── docs/                   # 详细文档
 ```
 
