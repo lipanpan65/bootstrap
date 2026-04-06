@@ -1,0 +1,30 @@
+---
+description: Bootstrap naming and module boundary conventions
+alwaysApply: true
+---
+
+# Bootstrap Naming Conventions
+
+- Prefer domain-first structure across Bash, Python, docs, and tests.
+- Keep external CLI commands short when there is only one implementation.
+- When a domain has multiple implementations, name commands as `domain + implementation + action`.
+
+## Required Patterns
+
+- Treat `kind` as part of the `k8s` domain, not as a long-term top-level sibling.
+- Place Kubernetes implementations under `platforms/k8s/<impl>/`.
+- Mirror the same boundaries in Python packages, docs, and tests.
+- Prefer Tool names with namespaces such as `k8s.kubeadm.init` and `pgsql.backup`.
+
+## Compatibility Rules
+
+- Migration aliases are allowed, but do not use them as the default naming style for new features.
+- `bootstrap k8s init` and `bootstrap k8s join` may remain as aliases for `bootstrap k8s kubeadm init/join`.
+- Legacy `k8s master` and `k8s worker` compatibility may remain during migration, but new docs should prefer `init/join`.
+
+## Examples
+
+- Good: `platforms/k8s/kind/install.sh`
+- Good: `bootstrap.core.platforms.k8s.kind`
+- Good: `bootstrap k8s kind create`
+- Avoid: adding new long-term top-level paths like `kind/` beside `k8s/`

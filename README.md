@@ -9,6 +9,62 @@ curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install
   | sudo bash -s -- <service> [args...]
 ```
 
+## Python CLI 开发
+
+项目正在逐步引入 Python CLI / Tool 层，推荐使用 `uv` 管理开发环境。
+
+### 安装 uv
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv --version
+```
+
+### 初始化开发环境
+
+```bash
+git clone https://github.com/lipanpan65/bootstrap.git
+cd bootstrap
+
+# 安装并固定项目所需 Python 版本
+uv python install 3.11
+
+# 创建虚拟环境并安装项目及开发依赖
+uv venv --python 3.11
+source .venv/bin/activate
+uv sync --dev
+```
+
+### 常用命令
+
+```bash
+# 查看 CLI 帮助
+uv run bootstrap --help
+uv run bootstrap version
+
+# 查看 Tool 注册信息
+uv run bootstrap tools list
+uv run bootstrap tools schema pgsql.backup
+uv run bootstrap tools schema pgsql_backup
+
+# 运行最小单元测试
+uv run pytest tests/unit -v
+```
+
+### 当前 Python CLI 覆盖范围
+
+- `bootstrap pgsql backup`
+- `bootstrap pgsql restore`
+- `bootstrap pgsql list-backups`
+- `bootstrap k8s kubeadm init`
+- `bootstrap k8s kubeadm join`
+- `bootstrap k8s kind create`
+- `bootstrap k8s kind status`
+
+说明：
+- Bash 脚本仍然是当前主入口，Python CLI 处于渐进引入阶段。
+- 兼容别名仍可用，例如 `bootstrap k8s init` 等价于 `bootstrap k8s kubeadm init`。
+
 ## 支持的服务
 
 | 服务 | 说明 | 状态 |
@@ -46,32 +102,32 @@ curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install
 
 ```bash
 # 整库备份
-./pgsql/backup.sh -H 10.0.0.1 -U postgres -d mydb --yes
+./services/pgsql/backup/run.sh -H 10.0.0.1 -U postgres -d mydb --yes
 
 # 只备份指定表
-./pgsql/backup.sh -d mydb -t users -t orders --yes
+./services/pgsql/backup/run.sh -d mydb -t users -t orders --yes
 
 # 排除大表
-./pgsql/backup.sh -d mydb -T audit_logs --yes
+./services/pgsql/backup/run.sh -d mydb -T audit_logs --yes
 
 # 只备份表结构
-./pgsql/backup.sh -d mydb --schema-only --yes
+./services/pgsql/backup/run.sh -d mydb --schema-only --yes
 
 # 恢复到指定数据库
-./pgsql/restore.sh mydb_20260402_120000.dump -d mydb --yes
+./services/pgsql/restore/run.sh mydb_20260402_120000.dump -d mydb --yes
 
 # 恢复到新库（自动创建）
-./pgsql/restore.sh mydb.dump -d mydb_new --yes
+./services/pgsql/restore/run.sh mydb.dump -d mydb_new --yes
 
 # 查看帮助
-./pgsql/backup.sh --help
-./pgsql/restore.sh --help
+./services/pgsql/backup/run.sh --help
+./services/pgsql/restore/run.sh --help
 ```
 
 ### Prometheus 监控
 
 ```bash
-# 安装 Prometheus Server（监控服务器��
+# 安装 Prometheus Server（监控服务器）
 curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install.sh \
   | sudo bash -s -- prometheus server
 
@@ -88,10 +144,10 @@ curl -fsSL https://raw.githubusercontent.com/lipanpan65/bootstrap/master/install
   | sudo bash -s -- prometheus all --yes
 
 # 自定义版本和保留时间
-sudo ./prometheus/install.sh server -v 2.53.4 -r 30d --yes
+sudo ./observability/prometheus/install.sh server -v 2.53.4 -r 30d --yes
 
 # 查看帮助
-./prometheus/install.sh --help
+./observability/prometheus/install.sh --help
 ```
 
 ### 直接执行子脚本（本地克隆后）
@@ -100,47 +156,80 @@ sudo ./prometheus/install.sh server -v 2.53.4 -r 30d --yes
 git clone https://github.com/lipanpan65/bootstrap.git
 cd bootstrap
 
-sudo ./k8s/install.sh master
-sudo ./k8s/install.sh worker --yes
+sudo ./platforms/k8s/kubeadm/install.sh master
+sudo ./platforms/k8s/kubeadm/install.sh worker --yes
 
 # worker 加入后，为未标记节点打上 worker 角色标签
-sudo ./k8s/install.sh label-workers
+sudo ./platforms/k8s/kubeadm/install.sh label-workers
 
 # Prometheus 全组件安装
-sudo ./prometheus/install.sh all --yes
+sudo ./observability/prometheus/install.sh all --yes
+
+# PostgreSQL 备份
+sudo ./services/pgsql/backup/run.sh -d mydb --yes
 ```
 
 ## 目录结构
 
-```
+```text
 bootstrap/
-├── install.sh              # 统一入口，负责服务分发
+├── install.sh                  # 统一入口，负责 curl | bash 分发
 ├── README.md
-├── CLAUDE.md               # Claude Code 项目规范
+├── CLAUDE.md                   # 项目规范
 ├── LICENSE
 │
 ├── common/
-│   └── lib.sh              # 公共函数库（颜色、日志、预检等）
+│   └── lib.sh                  # Bash 公共函数库
+│
+├── platforms/
+│   └── k8s/
+│       ├── README.md
+│       ├── kubeadm/
+│       │   ├── install.sh      # 新入口：转发到旧的 k8s/install.sh
+│       │   └── README.md
+│       └── kind/
+│           ├── install.sh      # 新入口：转发到旧的 kind/install.sh
+│           └── README.md
+│
+├── services/
+│   └── pgsql/
+│       ├── README.md
+│       ├── backup/
+│       │   └── run.sh          # 新入口：转发到旧的 pgsql/backup.sh
+│       ├── restore/
+│       │   └── run.sh          # 新入口：转发到旧的 pgsql/restore.sh
+│       └── tests/
+│           ├── test_pgsql.sh
+│           └── test_integration.sh
+│
+├── observability/
+│   └── prometheus/
+│       ├── install.sh          # 新入口：转发到旧的 prometheus/install.sh
+│       └── README.md
+│
+├── src/
+│   └── bootstrap/              # Python CLI / Tool / Core
+├── tests/
+│   └── unit/                   # Python 单元测试
 │
 ├── docs/
-│   ├── k8s-install.md          # K8s 安装详解
-│   ├── k8s-dashboard.md        # K8s Dashboard 详解
-│   ├── pgsql-backup-restore.md # PostgreSQL 备份恢复详解
-│   ├── pgsql-test-plan.md      # PostgreSQL 测试方案
-│   └── prometheus-install.md   # Prometheus 安装详解
+│   ├── cli-refactor-design.md
+│   ├── platforms/
+│   ├── services/
+│   └── observability/
 │
-├── k8s/
-│   └── install.sh          # K8s 集群安装（master / worker）
-│
-├── prometheus/
-│   └─�� install.sh          # Prometheus 监控安装（server / node-exporter / alertmanager）
-│
-└── pgsql/
-    ├── backup.sh            # PostgreSQL 备份脚本
-    ├── restore.sh           # PostgreSQL 恢复脚本
-    ├── test_pgsql.sh        # 单元测试（mock）
-    └── test_integration.sh  # 集成测试（真实数据库）
+├── k8s/                        # 旧路径，兼容保留
+├── kind/                       # 旧路径，兼容保留
+├── pgsql/                      # 旧路径，兼容保留
+└── prometheus/                 # 旧路径，兼容保留
 ```
+
+说明：
+
+- 当前仓库处于迁移阶段，新目录结构已经落地。
+- 本地执行与文档示例优先使用新路径。
+- 旧 Bash 路径继续保留，避免打断 `curl | bash`、历史文档和人工执行习惯。
+- Python CLI 与测试优先对齐新结构，后续会逐步把 Bash 实现迁移到新路径。
 
 ## K8s 安装说明
 
@@ -195,7 +284,7 @@ scp 到各节点当前目录，脚本会自动检测并导入。
 worker 加入后默认 ROLES 显示 `<none>`，在 master 上执行：
 
 ```bash
-sudo ./k8s/install.sh label-workers
+sudo ./platforms/k8s/kubeadm/install.sh label-workers
 ```
 
 自动为所有未标记的节点打上 `worker` 角色标签。
@@ -224,7 +313,7 @@ sudo ./k8s/install.sh label-workers
 - **安全校验** — 数据库名合法性校验，备份文件权限 600
 - **分阶段确认** — 关键步骤前打印执行摘要，支持 `--yes` 全自动
 
-详见 [备份恢复详解](docs/pgsql-backup-restore.md)。
+详见 [备份恢复详解](docs/services/pgsql/backup-restore.md)。
 
 ## Prometheus 监控说明
 
@@ -256,7 +345,7 @@ sudo ./k8s/install.sh label-workers
 - **分阶段确认** — 关键步骤前打印说明，支持 `--yes` 全自动
 - **日志记录** — 所有操作写入 `/var/log/prometheus-install.log`
 
-详见 [Prometheus 安装详解](docs/prometheus-install.md)。
+详见 [Prometheus 安装详解](docs/observability/prometheus/install.md)。
 
 ## 开发指南
 
