@@ -1,0 +1,33 @@
+---
+description: Bootstrap docs naming and placement conventions
+alwaysApply: true
+---
+
+# Bootstrap Docs Conventions
+
+- Treat `docs/` as a taxonomy by document role, not by author or phase.
+- Use `kebab-case` for all new doc filenames.
+- Let directory express document state; do not encode state in plan filenames.
+
+## Required Placement
+
+- Put stable cross-domain architecture docs in `docs/architecture/`.
+- Put platform docs in `docs/platforms/`.
+- Put service docs in `docs/services/`.
+- Put observability docs in `docs/observability/`.
+- Put plans, roadmaps, and evolution proposals in `docs/plans/`.
+
+## Plans Rules
+
+- Use `docs/plans/active/` for current work.
+- Use `docs/plans/completed/` for finished plan archives.
+- Use `docs/plans/backlog/` for deferred candidate plans.
+- Prefer names like `mcp-evolution.md` or `tool-runtime-plan.md`.
+- Avoid names like `active-mcp-plan.md`, `mcp_plan.md`, or dated filenames by default.
+
+## Examples
+
+- Good: `docs/architecture/system-structure.md`
+- Good: `docs/services/pgsql/test-plan.md`
+- Good: `docs/plans/active/mcp-evolution.md`
+- Avoid: putting stable architecture references under `docs/plans/`

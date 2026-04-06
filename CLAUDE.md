@@ -26,6 +26,13 @@ bootstrap/
 ├── src/bootstrap/
 ├── tests/unit/
 └── docs/
+    ├── README.md
+    ├── architecture/
+    ├── cli-refactor-design.md
+    ├── plans/
+    ├── platforms/
+    ├── services/
+    └── observability/
 ```
 
 ## Bash 约定
@@ -44,6 +51,14 @@ bootstrap/
 - PostgreSQL 统一放在 `services/pgsql/`
 - Prometheus 统一放在 `observability/prometheus/`
 - Python CLI 只保留 canonical 命令，不保留下划线 Tool 名称或短别名
+
+## 文档约定
+
+- 文档总分类与命名规则见 `docs/README.md`
+- 稳定架构说明放在 `docs/architecture/`
+- 稳定使用文档放在 `docs/platforms/`、`docs/services/`、`docs/observability/`
+- 规划、路线图、演进设计放在 `docs/plans/`
+- `docs/cli-refactor-design.md` 当前保留在 `docs/` 根目录，作为跨领域稳定设计说明
 
 ## 测试约定
 

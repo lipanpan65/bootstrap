@@ -129,7 +129,10 @@ bootstrap/
 ├── tests/
 │   └── unit/
 └── docs/
+    ├── README.md
+    ├── architecture/
     ├── cli-refactor-design.md
+    ├── plans/
     ├── platforms/
     ├── services/
     └── observability/
@@ -137,6 +140,8 @@ bootstrap/
 
 ## 文档
 
+- [Docs 总说明](docs/README.md)
+- [架构文档说明](docs/architecture/README.md)
 - [Kubernetes 安装](docs/platforms/k8s/install.md)
 - [Kubernetes Dashboard](docs/platforms/k8s/dashboard.md)
 - [kubeadm 说明](docs/platforms/k8s/kubeadm.md)
@@ -145,3 +150,4 @@ bootstrap/
 - [PostgreSQL 测试方案](docs/services/pgsql/test-plan.md)
 - [Prometheus 安装](docs/observability/prometheus/install.md)
 - [CLI 设计与结构](docs/cli-refactor-design.md)
+- [规划与路线图](docs/plans/README.md)
