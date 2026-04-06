@@ -46,7 +46,7 @@ _load_lib
 # ────────────────────────────────────────────────────────────
 # 配置
 # ────────────────────────────────────────────────────────────
-LOG_FILE="/var/log/pgsql-backup.log"
+LOG_FILE="${LOG_FILE:-/var/log/pgsql-backup.log}"
 
 # 连接参数（通过环境变量覆盖）
 PGHOST="${PGHOST:-127.0.0.1}"
@@ -495,7 +495,8 @@ verify_backup() {
 # 主流程
 # ────────────────────────────────────────────────────────────
 main() {
-    mkdir -p "$(dirname "$LOG_FILE")"
+    mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
+    touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/pgsql-backup.log"
     echo "=== PostgreSQL 备份开始 $(date) | 数据库: ${PGDATABASE:-未指定} ===" >> "$LOG_FILE"
 
     print_banner "PostgreSQL 数据库备份" "主机: ${PGHOST}:${PGPORT} | 格式: ${BACKUP_FORMAT}"

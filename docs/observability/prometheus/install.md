@@ -1,7 +1,21 @@
-# Prometheus 安装文档
+# Prometheus 安装
 
-当前详细说明仍维护在旧文档中：
+## 入口
 
-- [`docs/prometheus-install.md`](../../prometheus-install.md)
+`./observability/prometheus/install.sh`
 
-该文件用于承接新的目标目录结构，后续内容会逐步迁移到这里。
+## 组件
+
+- `server`
+- `node-exporter`
+- `alertmanager`
+- `all`
+
+## 示例
+
+```bash
+sudo ./observability/prometheus/install.sh server --yes
+sudo ./observability/prometheus/install.sh node-exporter --yes
+sudo ./observability/prometheus/install.sh alertmanager --yes
+sudo ./observability/prometheus/install.sh all --yes
+```

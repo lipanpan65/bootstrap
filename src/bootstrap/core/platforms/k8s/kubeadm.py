@@ -10,12 +10,7 @@ from bootstrap.utils.shell import resolve_script, run_command
 
 
 def _script() -> str:
-    return str(
-        resolve_script(
-            "platforms/k8s/kubeadm/install.sh",
-            "k8s/install.sh",
-        )
-    )
+    return str(resolve_script("platforms/k8s/kubeadm/install.sh"))
 
 
 def _result_for(action: str, args: list[str], input_text: str | None = None) -> KubeadmCommandResult:

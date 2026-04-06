@@ -6,11 +6,7 @@
 
 ```bash
 sudo ./platforms/k8s/kind/install.sh create --yes
+sudo ./platforms/k8s/kind/install.sh install --yes
 sudo ./platforms/k8s/kind/install.sh status
 sudo ./platforms/k8s/kind/install.sh delete
 ```
-
-## 兼容说明
-
-- 当前入口会转发到旧路径 `kind/install.sh`。
-- 旧路径继续保留，以兼容 `curl | bash` 和既有使用方式。

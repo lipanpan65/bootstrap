@@ -18,6 +18,6 @@ def list_command() -> None:
 
 @app.command("schema")
 def schema_command(
-    name: Annotated[str, typer.Argument(help="Tool 名称或兼容别名")],
+    name: Annotated[str, typer.Argument(help="Tool canonical 名称")],
 ) -> None:
     typer.echo(json.dumps(get_schema(name), indent=2, ensure_ascii=False))

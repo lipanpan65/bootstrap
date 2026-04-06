@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# pgsql/test_integration.sh — 集成测试（真实 PostgreSQL）
+# services/pgsql/tests/test_integration.sh — 集成测试（真实 PostgreSQL）
 #
 # 前置条件:
 #   - pg-source (127.0.0.1:5434) 包含 testdb
@@ -461,6 +461,9 @@ test_e2e_cleanup() {
     echo ""
     echo -e "${_BOLD}=== E2E-10: 过期备份清理 ===${_NC}"
 
+    local existing_backups
+    existing_backups=$(find "$BACKUP_DIR/daily/" -name "${SRC_DB}_*.dump" -type f 2>/dev/null | wc -l)
+
     # 创建假的过期文件
     mkdir -p "$BACKUP_DIR/daily"
     touch "$BACKUP_DIR/daily/${SRC_DB}_20260101_120000.dump"
@@ -478,8 +481,8 @@ test_e2e_cleanup() {
 
     # 新备份文件应存在
     local new_backups
-    new_backups=$(find "$BACKUP_DIR/daily/" -name "${SRC_DB}_20260402_*.dump" -type f | wc -l)
-    assert_eq "E2E-10.3 新备份文件存在" "0" "$([[ $new_backups -gt 0 ]] && echo 0 || echo 1)"
+    new_backups=$(find "$BACKUP_DIR/daily/" -name "${SRC_DB}_*.dump" -type f | wc -l)
+    assert_eq "E2E-10.3 新备份文件存在" "0" "$([[ $new_backups -gt $existing_backups ]] && echo 0 || echo 1)"
 }
 
 # ────────────────────────────────────────────────────────────

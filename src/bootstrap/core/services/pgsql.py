@@ -22,10 +22,7 @@ def _extract_backup_file(stdout: str) -> str | None:
 
 
 def run_backup(params: PgsqlBackupParams) -> PgsqlBackupResult:
-    script = resolve_script(
-        "services/pgsql/backup/run.sh",
-        "pgsql/backup.sh",
-    )
+    script = resolve_script("services/pgsql/backup/run.sh")
     args = [
         str(script),
         "-d",
@@ -72,10 +69,7 @@ def run_backup(params: PgsqlBackupParams) -> PgsqlBackupResult:
 
 
 def run_restore(params: PgsqlRestoreParams) -> PgsqlRestoreResult:
-    script = resolve_script(
-        "services/pgsql/restore/run.sh",
-        "pgsql/restore.sh",
-    )
+    script = resolve_script("services/pgsql/restore/run.sh")
     args = [
         str(script),
         params.backup_file,

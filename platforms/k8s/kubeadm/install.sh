@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# k8s/install.sh — K8s 集群安装脚本
+# platforms/k8s/kubeadm/install.sh — K8s 集群安装脚本
 #
 # 本地执行:
 #   sudo ./platforms/k8s/kubeadm/install.sh master [--yes]
@@ -25,7 +25,7 @@ _load_lib() {
 
     # 候选路径列表（按优先级）
     local candidates=(
-        # 情况 1：本地克隆，脚本在 k8s/install.sh，lib 在 ../common/lib.sh
+        # 情况 1：本地克隆，脚本在 platforms/k8s/kubeadm/install.sh，lib 在 ../../../common/lib.sh
         "$(cd "$(dirname "${BASH_SOURCE[0]:-install.sh}")" 2>/dev/null && pwd)/../../../common/lib.sh"
         # 情况 2：顶层 install.sh 分发，cd 到 TMP_DIR 后，lib 在 ./common/lib.sh
         "$(pwd)/common/lib.sh"

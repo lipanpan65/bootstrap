@@ -11,12 +11,7 @@ from bootstrap.utils.shell import resolve_script, run_command
 
 
 def _script() -> str:
-    return str(
-        resolve_script(
-            "platforms/k8s/kind/install.sh",
-            "kind/install.sh",
-        )
-    )
+    return str(resolve_script("platforms/k8s/kind/install.sh"))
 
 
 def _append_common_flags(

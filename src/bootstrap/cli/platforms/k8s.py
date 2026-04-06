@@ -171,59 +171,5 @@ def kind_status(
     raise typer.Exit(code=result.returncode)
 
 
-@app.command("init")
-def init_alias(
-    ctx: typer.Context,
-    yes: Annotated[bool, typer.Option("--yes", "-y", help="跳过确认")] = False,
-) -> None:
-    """兼容别名：等价于 `bootstrap k8s kubeadm init`。"""
-    result = run_init(KubeadmInitParams(yes=yes))
-    if _output_mode(ctx) == "json":
-        _print_json(result.model_dump())
-    else:
-        _print_kubeadm_result(result)
-    raise typer.Exit(code=result.returncode)
-
-
-@app.command("join")
-def join_alias(
-    ctx: typer.Context,
-    join_command: Annotated[str | None, typer.Option("--join-command", help="非交互 join 命令")] = None,
-    yes: Annotated[bool, typer.Option("--yes", "-y", help="跳过确认")] = False,
-) -> None:
-    """兼容别名：等价于 `bootstrap k8s kubeadm join`。"""
-    result = run_join(KubeadmJoinParams(join_command=join_command, yes=yes))
-    if _output_mode(ctx) == "json":
-        _print_json(result.model_dump())
-    else:
-        _print_kubeadm_result(result)
-    raise typer.Exit(code=result.returncode)
-
-
-@app.command("label-workers")
-def label_workers_alias(ctx: typer.Context) -> None:
-    """兼容别名：等价于 `bootstrap k8s kubeadm label-workers`。"""
-    result = label_workers()
-    if _output_mode(ctx) == "json":
-        _print_json(result.model_dump())
-    else:
-        _print_kubeadm_result(result)
-    raise typer.Exit(code=result.returncode)
-
-
-@app.command("dashboard")
-def dashboard_alias(
-    ctx: typer.Context,
-    yes: Annotated[bool, typer.Option("--yes", "-y", help="跳过确认")] = False,
-) -> None:
-    """兼容别名：等价于 `bootstrap k8s kubeadm dashboard`。"""
-    result = install_dashboard(KubeadmDashboardParams(yes=yes))
-    if _output_mode(ctx) == "json":
-        _print_json(result.model_dump())
-    else:
-        _print_kubeadm_result(result)
-    raise typer.Exit(code=result.returncode)
-
-
 app.add_typer(kubeadm_app, name="kubeadm")
 app.add_typer(kind_app, name="kind")

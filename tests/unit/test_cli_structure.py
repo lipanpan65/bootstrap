@@ -19,14 +19,13 @@ def test_top_level_help_shows_command_groups() -> None:
     assert "tools" in result.stdout
 
 
-def test_k8s_help_shows_nested_groups_and_aliases() -> None:
+def test_k8s_help_shows_nested_groups() -> None:
     result = runner.invoke(app, ["k8s", "--help"])
 
     assert result.exit_code == 0
     assert "kubeadm" in result.stdout
     assert "kind" in result.stdout
-    assert "init" in result.stdout
-    assert "join" in result.stdout
+    assert "kubeadm" in result.stdout
 
 
 def test_kubeadm_nested_help_is_available() -> None:
@@ -44,8 +43,8 @@ def test_kind_nested_help_is_available() -> None:
     assert "--kind-version" in result.stdout
 
 
-def test_tools_schema_supports_alias() -> None:
-    result = runner.invoke(app, ["tools", "schema", "pgsql_backup"])
+def test_tools_schema_supports_canonical_name() -> None:
+    result = runner.invoke(app, ["tools", "schema", "pgsql.backup"])
 
     assert result.exit_code == 0
     assert "database" in result.stdout
@@ -92,7 +91,7 @@ def test_kind_create_supports_json_output() -> None:
     assert '"cluster_name": "dev"' in result.stdout
 
 
-def test_kubeadm_alias_supports_json_output() -> None:
+def test_kubeadm_init_supports_json_output() -> None:
     with patch("bootstrap.cli.platforms.k8s.run_init") as mock_run:
         mock_run.return_value.model_dump.return_value = {
             "success": True,
@@ -104,9 +103,15 @@ def test_kubeadm_alias_supports_json_output() -> None:
 
         result = runner.invoke(
             app,
-            ["--output", "json", "k8s", "init", "--yes"],
+            ["--output", "json", "k8s", "kubeadm", "init", "--yes"],
         )
 
     assert result.exit_code == 0
     assert '"success": true' in result.stdout
     assert '"action": "init"' in result.stdout
+
+
+def test_k8s_init_alias_is_no_longer_available() -> None:
+    result = runner.invoke(app, ["k8s", "init", "--yes"])
+
+    assert result.exit_code != 0

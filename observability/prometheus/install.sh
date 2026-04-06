@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# prometheus/install.sh — Prometheus 监控安装脚本
+# observability/prometheus/install.sh — Prometheus 监控安装脚本
 #
 # 本地执行:
 #   sudo ./observability/prometheus/install.sh server [--yes]

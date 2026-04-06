@@ -46,7 +46,7 @@ _load_lib
 # ────────────────────────────────────────────────────────────
 # 配置
 # ────────────────────────────────────────────────────────────
-LOG_FILE="/var/log/pgsql-restore.log"
+LOG_FILE="${LOG_FILE:-/var/log/pgsql-restore.log}"
 
 PGHOST="${PGHOST:-127.0.0.1}"
 PGPORT="${PGPORT:-5432}"
@@ -393,7 +393,8 @@ verify_restore() {
 # 主流程
 # ────────────────────────────────────────────────────────────
 main() {
-    mkdir -p "$(dirname "$LOG_FILE")"
+    mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
+    touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/pgsql-restore.log"
     echo "=== PostgreSQL 恢复开始 $(date) | 文件: ${BACKUP_FILE} ===" >> "$LOG_FILE"
 
     print_banner "PostgreSQL 数据库恢复" "主机: ${PGHOST}:${PGPORT} | 文件: $(basename "$BACKUP_FILE")"

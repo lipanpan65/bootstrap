@@ -1,7 +1,21 @@
 # Kind 文档
 
-当前 Kind 的快速开始仍主要维护在：
+## 入口
 
-- [`kind/README.md`](../../../kind/README.md)
+`./platforms/k8s/kind/install.sh`
 
-该文件用于承接新的目标目录结构，后续内容会逐步迁移到这里。
+## 子命令
+
+- `create`
+- `install`
+- `status`
+- `delete`
+
+## 示例
+
+```bash
+sudo ./platforms/k8s/kind/install.sh create --yes
+sudo ./platforms/k8s/kind/install.sh create --name dev --workers 2 --yes
+sudo ./platforms/k8s/kind/install.sh status
+sudo ./platforms/k8s/kind/install.sh delete
+```

@@ -7,8 +7,14 @@
 - `kubeadm/`：面向真实节点集群安装与管理
 - `kind/`：面向本地学习与测试的 Kind 集群
 
-## 说明
+## 入口
 
-- 该目录是新的目标结构入口。
-- 现有 Bash 实现仍保留旧路径，以兼容 `curl | bash` 和历史命令。
-- 新路径脚本会转发到当前稳定的 Bash 实现。
+```bash
+sudo ./platforms/k8s/kubeadm/install.sh master
+sudo ./platforms/k8s/kubeadm/install.sh worker --yes
+sudo ./platforms/k8s/kubeadm/install.sh dashboard --yes
+sudo ./platforms/k8s/kubeadm/install.sh label-workers
+
+sudo ./platforms/k8s/kind/install.sh create --yes
+sudo ./platforms/k8s/kind/install.sh status
+```

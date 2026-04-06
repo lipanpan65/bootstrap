@@ -6,9 +6,16 @@
 
 - `backup/run.sh`：备份脚本入口
 - `restore/run.sh`：恢复脚本入口
-- `tests/`：Bash 测试入口
+- `tests/test_pgsql.sh`：mock 单元测试
+- `tests/test_integration.sh`：真实 PostgreSQL 集成测试
 
-## 兼容说明
+## 常用命令
 
-- 当前入口会转发到旧路径 `pgsql/*.sh`。
-- 旧路径继续保留，避免打断现有文档、测试和人工执行习惯。
+```bash
+./services/pgsql/backup/run.sh -d mydb --yes
+./services/pgsql/backup/run.sh -d mydb -t users -t orders --yes
+./services/pgsql/restore/run.sh mydb.dump -d mydb_new --yes
+
+bash services/pgsql/tests/test_pgsql.sh
+bash services/pgsql/tests/test_integration.sh
+```

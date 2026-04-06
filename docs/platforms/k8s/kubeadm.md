@@ -1,7 +1,21 @@
 # kubeadm 文档
 
-当前 kubeadm 相关详细说明仍维护在：
+## 入口
 
-- [`docs/k8s-install.md`](../../k8s-install.md)
+`./platforms/k8s/kubeadm/install.sh`
 
-该文件用于承接新的目标目录结构，后续内容会逐步迁移到这里。
+## 子命令
+
+- `master`
+- `worker`
+- `label-workers`
+- `dashboard`
+
+## 示例
+
+```bash
+sudo ./platforms/k8s/kubeadm/install.sh master
+sudo ./platforms/k8s/kubeadm/install.sh worker --yes
+sudo ./platforms/k8s/kubeadm/install.sh label-workers
+sudo ./platforms/k8s/kubeadm/install.sh dashboard --yes
+```

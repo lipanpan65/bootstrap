@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# kind/install.sh — Kind K8s 学习环境一键安装
+# platforms/k8s/kind/install.sh — Kind K8s 学习环境一键安装
 #
 # 本地执行:
 #   sudo ./platforms/k8s/kind/install.sh create [--yes]     安装工具并创建集群

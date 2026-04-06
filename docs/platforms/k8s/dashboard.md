@@ -1,7 +1,20 @@
-# Kubernetes Dashboard 文档
+# Kubernetes Dashboard
 
-当前详细说明仍维护在旧文档中：
+## 入口
 
-- [`docs/k8s-dashboard.md`](../../k8s-dashboard.md)
+```bash
+sudo ./platforms/k8s/kubeadm/install.sh dashboard --yes
+```
 
-该文件用于承接新的目标目录结构，后续内容会逐步迁移到这里。
+## 前置条件
+
+- 集群已经通过 `master` / `worker` 流程完成初始化
+- `kubectl` 能访问当前集群
+
+## 相关命令
+
+```bash
+sudo ./platforms/k8s/kubeadm/install.sh master
+sudo ./platforms/k8s/kubeadm/install.sh worker --yes
+sudo ./platforms/k8s/kubeadm/install.sh label-workers
+```

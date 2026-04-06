@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# pgsql/test_pgsql.sh — backup.sh / restore.sh 单元测试
+# services/pgsql/tests/test_pgsql.sh — backup.sh / restore.sh 单元测试
 #
 # 用法: bash services/pgsql/tests/test_pgsql.sh
 #

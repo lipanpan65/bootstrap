@@ -32,7 +32,16 @@ ok()    { echo -e "${GREEN}[OK]${NC}    ✅ $*"; }
 # ────────────────────────────────────────────────────────────
 # 支持的服务列表
 # ────────────────────────────────────────────────────────────
-SUPPORTED_SERVICES=("k8s" "docker" "redis" "nginx" "prometheus" "kind")
+SUPPORTED_SERVICES=("k8s" "prometheus" "kind")
+
+service_script_path() {
+    case "$1" in
+        k8s) echo "platforms/k8s/kubeadm/install.sh" ;;
+        kind) echo "platforms/k8s/kind/install.sh" ;;
+        prometheus) echo "observability/prometheus/install.sh" ;;
+        *) return 1 ;;
+    esac
+}
 
 usage() {
     echo ""
@@ -42,17 +51,14 @@ usage() {
     echo "  curl -fsSL ${BOOTSTRAP_BASE_URL}/install.sh | sudo bash -s -- <service> [args...]"
     echo ""
     echo -e "${BOLD}支持的服务:${NC}"
-    echo "  k8s     [master|worker] [--yes]   K8s 集群"
-    echo "  docker  [--yes]                   Docker / containerd"
-    echo "  redis   [--yes]                   Redis"
-    echo "  nginx   [--yes]                   Nginx"
-    echo "  prometheus [server|node-exporter|alertmanager|all] [--yes]  Prometheus 监控"
-    echo "  kind    [create|install|delete|status] [--yes]  Kind K8s 学习环境"
+    echo "  k8s         [master|worker|dashboard|label-workers] [--yes] K8s 集群"
+    echo "  prometheus  [server|node-exporter|alertmanager|all] [--yes] Prometheus 监控"
+    echo "  kind        [create|install|delete|status] [--yes]         Kind K8s 学习环境"
     echo ""
     echo -e "${BOLD}示例:${NC}"
     echo "  ... | sudo bash -s -- k8s master"
     echo "  ... | sudo bash -s -- k8s master --yes"
-    echo "  ... | sudo bash -s -- redis"
+    echo "  ... | sudo bash -s -- kind create --yes"
     echo ""
     exit 1
 }
@@ -79,7 +85,8 @@ fi
 # ────────────────────────────────────────────────────────────
 # 下载并执行子脚本
 # ────────────────────────────────────────────────────────────
-SCRIPT_URL="${BOOTSTRAP_BASE_URL}/${SERVICE}/install.sh"
+SCRIPT_PATH="$(service_script_path "${SERVICE}")" || error "未为服务 ${SERVICE} 配置脚本路由"
+SCRIPT_URL="${BOOTSTRAP_BASE_URL}/${SCRIPT_PATH}"
 LIB_URL="${BOOTSTRAP_BASE_URL}/common/lib.sh"
 
 log "服务: ${BOLD}${SERVICE}${NC}"
@@ -97,11 +104,11 @@ curl -fsSL "$LIB_URL" -o "${TMP_DIR}/common/lib.sh" \
 ok "lib.sh 下载完成"
 
 # 下载子脚本
-log "下载 ${SERVICE}/install.sh ..."
+log "下载 ${SCRIPT_PATH} ..."
 curl -fsSL "$SCRIPT_URL" -o "${TMP_DIR}/install.sh" \
-    || error "无法下载 ${SERVICE}/install.sh，请检查服务名是否正确"
+    || error "无法下载 ${SCRIPT_PATH}，请检查服务名是否正确"
 chmod +x "${TMP_DIR}/install.sh"
-ok "${SERVICE}/install.sh 下载完成"
+ok "${SCRIPT_PATH} 下载完成"
 
 echo ""
 
